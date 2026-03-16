@@ -85,15 +85,15 @@ public class PaymentService implements PaymentServiceInterface {
     @Override
     @Transactional
     public PaymentResponseDTO initiatePayment(CreatePaymentRequestDTO request) {
-        log.info("🚀 Initierar betalning för userId: {}, payerAlias: {}, packageId: {}",
+        log.info("Initiating payment for userId: {}, payerAlias: {}, packageId: {}",
                 request.getUserId(), request.getPayerAlias(), request.getPackageId());
 
         // 1. Validera och hämta package
         Package pkg = packageRepository.findById(request.getPackageId())
                 .orElseThrow(() -> new PackageNotFoundException(
-                        "Package med ID " + request.getPackageId() + " finns inte"));
+                        "Package with ID " + request.getPackageId() + " not found"));
 
-        log.info("📦 Paket hittat: {} - Pris: {} SEK", pkg.getName(), pkg.getPrice());
+        log.info("Package found: {} - Price: {} SEK", pkg.getName(), pkg.getPrice());
 
         // 2. Generera unikt payment ID (32 hex-tecken utan bindestreck, uppercase)
         String instructionUUID = UUID.randomUUID()
@@ -118,7 +118,7 @@ public class PaymentService implements PaymentServiceInterface {
 
         // 5. Spara i databas (första gången - status CREATED)
         paymentRepository.save(payment);
-        log.info("💾 Payment sparad i databas med status CREATED, ID: {}", instructionUUID);
+        log.info("Payment saved in database with status CREATED, ID: {}", instructionUUID);
 
         // 6. Bygg Swish payment request
         SwishPaymentRequest swishRequest = new SwishPaymentRequest();
@@ -128,24 +128,24 @@ public class PaymentService implements PaymentServiceInterface {
         swishRequest.setCurrency("SEK");
         swishRequest.setCallbackUrl(swishProperties.getCallbackUrl());
         swishRequest.setPayeePaymentReference("PKG-" + pkg.getId() + "-" + System.currentTimeMillis());
-        swishRequest.setMessage("Köp av " + pkg.getName());
+        swishRequest.setMessage("Purchase of " + pkg.getName());
         swishRequest.setCallbackIdentifier(callbackIdentifier);
 
         try {
             // 7. Skicka till Swish
-            log.info("📤 Skickar betalning till Swish...");
+            log.info("Sending payment to Swish...");
             ResponseEntity<String> swishResponse = swishClient.createPayment(
                     instructionUUID,
                     swishRequest);
 
-            log.info("✅ Swish response: Status {}, Location: {}",
+            log.info("Swish response: Status {}, Location: {}",
                     swishResponse.getStatusCode(),
                     swishResponse.getHeaders().getLocation());
 
             // 8. Uppdatera status till PENDING (väntar på callback)
             payment.setStatus(PaymentStatus.PENDING);
             paymentRepository.save(payment);
-            log.info("💾 Payment uppdaterad till status PENDING");
+            log.info("Payment updated to status PENDING");
 
             // 9. Bygg response till frontend
             PaymentResponseDTO response = new PaymentResponseDTO();
@@ -159,17 +159,17 @@ public class PaymentService implements PaymentServiceInterface {
             response.setQrCodeData(swishDeepLink);
 
             // Swish betalningar går ut efter 3 minuter
-            response.setExpiresAt(LocalDateTime.now().plusMinutes(3));
+            response.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
             return response;
         } catch (Exception e) {
             // Vid fel: uppdatera payment till ERROR status
-            log.error("❌ Fel vid Swish-anrop: {}", e.getMessage(), e);
+            log.error("Error during Swish call: {}", e.getMessage(), e);
             payment.setStatus(PaymentStatus.ERROR);
             payment.setErrorMessage(e.getMessage());
             paymentRepository.save(payment);
 
-            throw new SwishPaymentException("Kunde inte skapa betalning hos Swish: " + e.getMessage(), e);
+            throw new SwishPaymentException("Could not create payment with Swish: " + e.getMessage(), e);
         }
     }
 
@@ -184,19 +184,19 @@ public class PaymentService implements PaymentServiceInterface {
     @Override
     @Transactional
     public void handleSwishCallback(SwishPaymentResponse swishCallback) {
-        log.info("📥 Hanterar Swish callback för payment ID: {}", swishCallback.getId());
+        log.info("Handling Swish callback for payment ID: {}", swishCallback.getId());
 
         // 1. Hitta payment i databas
         Payment payment = paymentRepository.findById(swishCallback.getId())
                 .orElseThrow(() -> new PaymentNotFoundException(
-                        "Payment med ID " + swishCallback.getId() + " finns inte"));
+                        "Payment with ID " + swishCallback.getId() + " not found"));
 
-        log.info("💳 Payment hittat: Status innan={}, Amount={}",
+        log.info("Payment found: Status before={}, Amount={}",
                 payment.getStatus(), payment.getAmount());
 
         // 2. Kontrollera om payment redan är processad (idempotens)
         if (payment.getStatus() == PaymentStatus.PAID) {
-            log.warn("⚠️ Payment är redan PAID, ignorerar callback");
+            log.warn("Payment is already PAID, ignoring callback");
             return;
         }
 
@@ -205,7 +205,7 @@ public class PaymentService implements PaymentServiceInterface {
 
         switch (swishStatus) {
             case "PAID":
-                log.info("✅ Betalning genomförd!");
+                log.info("Payment completed!");
                 payment.setStatus(PaymentStatus.PAID);
                 payment.setPaidAt(LocalDateTime.now());
                 payment.setPaymentReference(swishCallback.getPaymentReference());
@@ -219,12 +219,12 @@ public class PaymentService implements PaymentServiceInterface {
                 break;
 
             case "DECLINED":
-                log.warn("❌ Betalning nekad av användare");
+                log.warn("Payment declined by user");
                 payment.setStatus(PaymentStatus.DECLINED);
                 break;
 
             case "ERROR":
-                log.error("⚠️ Fel i betalning: {} - {}",
+                log.error("Error in payment: {} - {}",
                         swishCallback.getErrorCode(),
                         swishCallback.getErrorMessage());
                 payment.setStatus(PaymentStatus.ERROR);
@@ -233,18 +233,18 @@ public class PaymentService implements PaymentServiceInterface {
                 break;
 
             case "CANCELLED":
-                log.info("🚫 Betalning avbruten");
+                log.info("Payment cancelled");
                 payment.setStatus(PaymentStatus.CANCELLED);
                 break;
 
             default:
-                log.warn("❓ Okänd Swish status: {}", swishStatus);
+                log.warn("Unknown Swish status: {}", swishStatus);
                 return;
         }
 
         // 4. Spara uppdaterad payment
         paymentRepository.save(payment);
-        log.info("💾 Payment uppdaterad till status: {}", payment.getStatus());
+        log.info("Payment updated to status: {}", payment.getStatus());
     }
 
     /**
@@ -255,7 +255,7 @@ public class PaymentService implements PaymentServiceInterface {
     public Payment getPaymentById(String paymentId) {
         return paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException(
-                        "Payment med ID " + paymentId + " finns inte"));
+                        "Payment with ID " + paymentId + " not found"));
     }
 
     /**
@@ -264,7 +264,7 @@ public class PaymentService implements PaymentServiceInterface {
      */
     @Override
     public List<Payment> getAllPayments() {
-        log.info("📦 [ADMIN] Fetching all payments");
+        log.info("[ADMIN] Fetching all payments");
         return paymentRepository.findAll();
     }
 
@@ -274,7 +274,7 @@ public class PaymentService implements PaymentServiceInterface {
      */
     private void activateSubscriptionForUser(Payment payment) {
         try {
-            log.info("🔄 Aktiverar subscription i userService för payment: {}", payment.getId());
+            log.info("🔄 Activating subscription in userService for payment: {}", payment.getId());
 
             // Hämta package-info
             Package pkg = packageRepository.findById(payment.getPackageId())
@@ -298,13 +298,13 @@ public class PaymentService implements PaymentServiceInterface {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            log.info("✅ Subscription aktiverad i userService för userId= {}, response: {}",
+            log.info("Subscription activated in userService for userId= {}, response: {}",
                     payment.getUserId(), response);
 
         } catch (Exception e) {
             // Logga fel men kasta INTE exception
             // Betalningen är fortfarande giltig även om subscription-skapandet misslyckas
-            log.error("❌ Fel vid aktivering av subscription för payment {}: {}",
+            log.error("Error activating subscription for payment {}: {}",
                     payment.getId(), e.getMessage(), e);
         }
     }
@@ -321,7 +321,7 @@ public class PaymentService implements PaymentServiceInterface {
      */
     @Override
     public Payment getPaymentByIdWithAuthorization(String paymentId, Long userId, boolean isAdmin) {
-        log.info("🔍 Authorization check - paymentId: {}, userId: {}, isAdmin: {}",
+        log.info("Authorization check - paymentId: {}, userId: {}, isAdmin: {}",
                 paymentId, userId, isAdmin);
 
         // 1. Hämta payment (kastar PaymentNotFoundException om den inte finns)
@@ -329,13 +329,13 @@ public class PaymentService implements PaymentServiceInterface {
 
         // 2. Authorization: Admin ser allt, vanlig användare endast sina egna
         if (!isAdmin && !payment.getUserId().equals(userId)) {
-            log.warn("⛔ FORBIDDEN: User {} tried to access payment {} owned by user {}",
+            log.warn("FORBIDDEN: User {} tried to access payment {} owned by user {}",
                     userId, paymentId, payment.getUserId());
             throw new ForbiddenException(
-                    "Du har inte behörighet att se denna betalning");
+                    "You do not have permission to view this payment");
         }
 
-        log.info("✅ Authorization passed");
+        log.info("Authorization passed");
         return payment;
     }
 
@@ -348,9 +348,9 @@ public class PaymentService implements PaymentServiceInterface {
      */
     @Override
     public List<Payment> getPaymentsByUserId(Long userId) {
-        log.info("📦 Fetching payments for userId: {}", userId);
+        log.info("Fetching payments for userId: {}", userId);
         List<Payment> payments = paymentRepository.findByUserId(userId);
-        log.info("✅ Found {} payments for user {}", payments.size(), userId);
+        log.info("Found {} payments for user {}", payments.size(), userId);
         return payments;
     }
 
@@ -375,15 +375,15 @@ public class PaymentService implements PaymentServiceInterface {
     @Override
     @Transactional
     public void deletePaymentsByUserId(Long userId) {
-        log.info("🗑️ Cascade delete: Removing all payments for userId: {}", userId);
+        log.info("Cascade delete: Removing all payments for userId: {}", userId);
 
         List<Payment> payments = paymentRepository.findByUserId(userId);
 
         if (!payments.isEmpty()) {
             paymentRepository.deleteAll(payments);
-            log.info("✅ Deleted {} payments for user {}", payments.size(), userId);
+            log.info("Deleted {} payments for user {}", payments.size(), userId);
         } else {
-            log.info("ℹ️ No payments to delete for user {}", userId);
+            log.info("No payments to delete for user {}", userId);
         }
     }
 }

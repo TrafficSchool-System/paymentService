@@ -69,7 +69,7 @@ public class SwishCallbackController {
     public ResponseEntity<String> handlePaymentCallback(
             @RequestBody SwishPaymentResponse callback,
             @RequestHeader(value = "callbackIdentifier", required = false) String callbackIdentifier) {
-        log.info("📥 Webhook received from Swish for payment ID: {}, Status: {}",
+        log.info("Webhook received from Swish for payment ID: {}, Status: {}",
                 callback.getId(), callback.getStatus());
 
         try {
@@ -81,7 +81,7 @@ public class SwishCallbackController {
         } catch (Exception e) {
             // Log error but still return 200 OK to Swish
             // Otherwise Swish will retry callback indefinitely
-            log.error("❌ Error processing callback: {}", e.getMessage(), e);
+            log.error("Error processing callback: {}", e.getMessage(), e);
             return ResponseEntity.ok("Callback received but processing failed");
         }
     }
