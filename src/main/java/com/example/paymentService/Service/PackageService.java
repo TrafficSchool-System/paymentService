@@ -43,9 +43,9 @@ public class PackageService implements PackageServiceInterface {
 
     @Override
     public List<Package> getAllPackages() {
-        log.info("📦 Hämtar alla packages");
+        log.info("Fetching all packages");
         List<Package> packages = packageRepository.findAll();
-        log.info("✅ Hittade {} packages", packages.size());
+        log.info("Found {} packages", packages.size());
         return packages;
     }
 
@@ -55,9 +55,9 @@ public class PackageService implements PackageServiceInterface {
      */
     @Override
     public List<Package> getActivePackages() {
-        log.info("📦 Hämtar aktiva packages");
+        log.info("Fetching active packages");
         List<Package> packages = packageRepository.findByActive(true);
-        log.info("✅ Hittade {} aktiva packages", packages.size());
+        log.info("Found {} active packages", packages.size());
         return packages;
     }
 
@@ -67,11 +67,11 @@ public class PackageService implements PackageServiceInterface {
 
     @Override
     public Package getPackageById(Long id) {
-        log.info("🔍 Hämtar package med ID: {}", id);
+        log.info("Fetching package with ID: {}", id);
         return packageRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Package med ID {} finns inte", id);
-                    return new PackageNotFoundException("Package med ID " + id + " finns inte");
+                    log.error("Package with ID {} does not exist", id);
+                    return new PackageNotFoundException("Package with ID " + id + " not found");
                 });
     }
 
@@ -84,30 +84,30 @@ public class PackageService implements PackageServiceInterface {
     @Override
     @Transactional
     public Package createPackage(CreatePackageRequestDTO request) {
-        log.info("➕ Skapar nytt package: {}", request.getName());
+        log.info("Creating new package: {}", request.getName());
 
         // Validering: Namn är obligatoriskt
         if (request.getName() == null || request.getName().isBlank()) {
-            log.error("❌ Validation failed: Namn är obligatoriskt");
-            throw new IllegalArgumentException("Namn är obligatoriskt");
+            log.error("Validation failed: Name is required");
+            throw new IllegalArgumentException("Name is required");
         }
 
         // Validering: Pris är obligatoriskt
         if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("❌ Validation failed: Pris måste vara större än 0");
-            throw new IllegalArgumentException("Pris måste vara större än 0");
+            log.error("Validation failed: Price must be greater than 0");
+            throw new IllegalArgumentException("Price must be greater than 0");
         }
 
         // Kontrollera att namn inte redan finns
         if (packageRepository.existsByName(request.getName())) {
-            log.error("❌ Package med namn '{}' finns redan", request.getName());
-            throw new PackageAlreadyExistsException("Package med namn '" + request.getName() + "' finns redan");
+            log.error("Package with name '{}' already exists", request.getName());
+            throw new PackageAlreadyExistsException("Package with name '" + request.getName() + "' already exists");
         }
 
         // Validering: validityDays är obligatoriskt
         if (request.getValidityDays() == null || request.getValidityDays() <= 0) {
-            log.error("❌ Validation failed: ValidityDays måste vara större än 0");
-            throw new IllegalArgumentException("ValidityDays måste vara större än 0");
+            log.error("Validation failed: ValidityDays must be greater than 0");
+            throw new IllegalArgumentException("ValidityDays must be greater than 0");
 
         }
 
@@ -124,7 +124,7 @@ public class PackageService implements PackageServiceInterface {
 
         // Spara package
         Package saved = packageRepository.save(pkg);
-        log.info("✅ Package skapat: ID={}, Namn={}, Pris={} SEK",
+        log.info("Package created: ID={}, Name={}, Price={} SEK",
                 saved.getId(), saved.getName(), saved.getPrice());
 
         return saved;
@@ -137,32 +137,32 @@ public class PackageService implements PackageServiceInterface {
     @Override
     @Transactional
     public Package updatePackage(Long id, UpdatePackageRequestDTO request) {
-        log.info("🔄 Uppdaterar package med ID: {}", id);
+        log.info("Updating package with ID: {}", id);
 
         // Hämta befintligt paket
         Package existing = packageRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Package med ID {} finns inte", id);
-                    return new PackageNotFoundException("Package med ID " + id + " finns inte");
+                    log.error("Package with ID {} does not exist", id);
+                    return new PackageNotFoundException("Package with ID " + id + " not found");
                 });
 
         // Validera: Namn är obligatoriskt
         if (request.getName() == null || request.getName().isBlank()) {
-            log.error("❌ Validation failed: Namn är obligatoriskt");
-            throw new IllegalArgumentException("Namn är obligatoriskt");
+            log.error("Validation failed: Name is required");
+            throw new IllegalArgumentException("Name is required");
         }
 
         // Validering: Pris är obligatoriskt och måste vara större än 0
         if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("❌ Validation failed: Pris måste vara större än 0");
-            throw new IllegalArgumentException("Pris måste vara större än 0");
+            log.error("Validation failed: Price must be greater than 0");
+            throw new IllegalArgumentException("Price must be greater than 0");
         }
 
         // Kontrollera om nytt namn koliderar med annat package
         if (!existing.getName().equals(request.getName()) &&
                 packageRepository.existsByName(request.getName())) {
-            log.error("❌ Package med namn '{}' finns redan", request.getName());
-            throw new PackageAlreadyExistsException("Package med namn '" + request.getName() + "' finns redan");
+            log.error("Package with name '{}' already exists", request.getName());
+            throw new PackageAlreadyExistsException("Package with name '" + request.getName() + "' already exists");
         }
 
         // Uppdatera fält från DTO
@@ -174,7 +174,7 @@ public class PackageService implements PackageServiceInterface {
 
         // Spara uppdaterat package
         Package saved = packageRepository.save(existing);
-        log.info("✅ Package uppdaterat: ID={}, Namn={}, Pris={} SEK",
+        log.info("Package updated: ID={}, Name={}, Price={} SEK",
                 saved.getId(), saved.getName(), saved.getPrice());
         return saved;
 
@@ -191,12 +191,12 @@ public class PackageService implements PackageServiceInterface {
     @Override
     @Transactional
     public void deletePackage(Long id) {
-        log.info("🗑️ Tar bort package med ID: {}", id);
+        log.info("Deleting package with ID: {}", id);
 
         // Kontrollera att package finns
         if (!packageRepository.existsById(id)) {
-            log.error("❌ Package med ID {} finns inte", id);
-            throw new PackageNotFoundException("Package med ID " + id + " finns inte");
+            log.error("❌ Package with ID {} does not exist", id);
+            throw new PackageNotFoundException("Package with ID " + id + " not found");
         }
 
         // TODO: Kontrollera om package har payments innan borttagning
@@ -207,7 +207,7 @@ public class PackageService implements PackageServiceInterface {
         // }
 
         packageRepository.deleteById(id);
-        log.info("✅ Package med ID {} borttaget", id);
+        log.info("✅ Package with ID {} deleted", id);
     }
 
     @Override
@@ -226,13 +226,13 @@ public class PackageService implements PackageServiceInterface {
     @Override
     @Transactional
     public Package togglePackageStatus(Long id, Boolean active) {
-        log.info("🔄 Toggling package status: ID={}, newStatus={}", id, active);
+        log.info("Toggling package status: ID={}, newStatus={}", id, active);
 
         // Hämta befintligt paket
         Package existing = packageRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Package med ID {} finns inte", id);
-                    return new PackageNotFoundException("Package med ID " + id + " finns inte");
+                    log.error("Package with ID {} does not exist", id);
+                    return new PackageNotFoundException("Package with ID " + id + " not found");
                 });
 
         // Uppdatera active status
@@ -240,7 +240,7 @@ public class PackageService implements PackageServiceInterface {
 
         // Spara uppdaterat package
         Package saved = packageRepository.save(existing);
-        log.info("✅ Package status updated: ID={}, Active={}", saved.getId(), saved.getActive());
+        log.info("Package status updated: ID={}, Active={}", saved.getId(), saved.getActive());
 
         return saved;
     }

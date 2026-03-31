@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PaymentNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handlePaymentNotFound(PaymentNotFoundException ex) {
         return new ResponseEntity<>(
-                buildError("Betalning hittades inte",
+                buildError("Payment not found",
                         ex.getMessage(),
                         HttpStatus.NOT_FOUND.value()),
                 HttpStatus.NOT_FOUND);
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PackageNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handlePackageNotFound(PackageNotFoundException ex) {
         return new ResponseEntity<>(
-                buildError("Paket hittades inte",
+                buildError("Package not found",
                         ex.getMessage(),
                         HttpStatus.NOT_FOUND.value()),
                 HttpStatus.NOT_FOUND);
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PackageAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handlePackageAlreadyExists(PackageAlreadyExistsException ex) {
         return new ResponseEntity<>(
-                buildError("Paket finns redan",
+                buildError("Package already exists",
                         ex.getMessage(),
                         HttpStatus.CONFLICT.value()),
                 HttpStatus.CONFLICT);
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
         return new ResponseEntity<>(
-                buildError("Åtkomst nekad",
+                buildError("Access denied",
                         ex.getMessage(),
                         HttpStatus.FORBIDDEN.value()),
                 HttpStatus.FORBIDDEN);
@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SwishPaymentException.class)
     public ResponseEntity<Map<String, Object>> handleSwishPaymentError(SwishPaymentException ex) {
         return new ResponseEntity<>(
-                buildError("Swish-betalning misslyckades",
+                buildError("Swish payment failed",
                         ex.getMessage(),
                         HttpStatus.BAD_REQUEST.value()),
                 HttpStatus.BAD_REQUEST);
@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return new ResponseEntity<>(
-                buildError("Ogiltig parameter",
+                buildError("Invalid parameter",
                         ex.getMessage(),
                         HttpStatus.BAD_REQUEST.value()),
                 HttpStatus.BAD_REQUEST);
@@ -86,8 +86,8 @@ public class GlobalExceptionHandler {
                 .map(error -> error.getDefaultMessage())
                 .collect(Collectors.toList());
 
-        Map<String, Object> body = buildError("Valideringsfel",
-                "Vänligen kontrollera dina uppgifter och försök igen.",
+        Map<String, Object> body = buildError("Validation error",
+                "Please check your input and try again.",
                 HttpStatus.BAD_REQUEST.value());
         body.put("details", errors);
 
@@ -97,8 +97,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
         return new ResponseEntity<>(
-                buildError("Internt serverfel",
-                        "Ett oväntat fel inträffade. Vänligen försök igen senare.",
+                buildError("Internal server error",
+                        "An unexpected error occurred. Please try again later.",
                         HttpStatus.INTERNAL_SERVER_ERROR.value()),
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }

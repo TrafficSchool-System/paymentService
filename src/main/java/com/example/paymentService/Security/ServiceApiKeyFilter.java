@@ -59,7 +59,7 @@ public class ServiceApiKeyFilter extends OncePerRequestFilter {
      * 
      * I produktion: Lägg i environment variable eller secret manager
      */
-    @Value("${service.api.key:TrafficSchool-Internal-Key-2026-CHANGE-IN-PROD}")
+    @Value("${service.api.key}")
     private String validApiKey;
 
     @Override
