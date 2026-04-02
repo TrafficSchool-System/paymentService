@@ -4,6 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.example.paymentService.Entity.Package;
+import com.example.paymentService.Entity.PackageType;
+
+import java.util.Optional;
 
 /**
  * Repository för Package-entity.
@@ -27,6 +30,14 @@ import com.example.paymentService.Entity.Package;
 public interface PackageRepository extends JpaRepository<Package, Long> {
 
     boolean existsByName(String name);
+
+    /**
+     * Finds a package by its type.
+     * 
+     * @param packageType The package type to search for
+     * @return Optional containing the package if found
+     */
+    Optional<Package> findByPackageType(PackageType packageType);
 
     /**
      * Finds all packages by active status.

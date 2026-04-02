@@ -45,4 +45,14 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     List<Payment> findByPackageId(Long packageId);
 
     List<Payment> findByUserId(Long userId);
+
+    /**
+     * Finds payments by user ID and status.
+     * Useful for checking if a user has PAID subscriptions.
+     * 
+     * @param userId The user ID
+     * @param status The payment status
+     * @return List of payments matching the criteria
+     */
+    List<Payment> findByUserIdAndStatus(Long userId, PaymentStatus status);
 }
