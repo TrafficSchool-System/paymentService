@@ -77,6 +77,10 @@ public class Payment {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+    // När betalningen går ut (5 minuter från skapande)
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

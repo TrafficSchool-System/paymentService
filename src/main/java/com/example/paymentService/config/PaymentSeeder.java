@@ -21,8 +21,10 @@ import java.util.UUID;
  * 
  * Körs automatiskt vid applikationsstart och ger test-användare
  * aktiv 1-månads prenumeration.
+ * 
+ * INAKTIVERAD: Ta bort kommentaren för att aktivera test-betalningar
  */
-@Component
+// @Component
 @Order(2) // Körs efter PackageSeeder
 @RequiredArgsConstructor
 @Slf4j

@@ -1,6 +1,8 @@
 package com.example.paymentService.swish.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -105,6 +107,10 @@ public class PaymentService implements PaymentServiceInterface {
         String callbackIdentifier = UUID.randomUUID().toString();
 
         // 4. Skapa payment entity med status CREATED
+        // Betalningen går ut efter 5 minuter (Swish standard är 3 min, vi ger lite
+        // extra marginal)
+        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(5);
+
         Payment payment = Payment.builder()
                 .id(instructionUUID)
                 .userId(request.getUserId())
@@ -113,6 +119,7 @@ public class PaymentService implements PaymentServiceInterface {
                 .amount(pkg.getPrice())
                 .status(PaymentStatus.CREATED)
                 .callbackIdentifier(callbackIdentifier)
+                .expiresAt(expiryTime)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -158,8 +165,11 @@ public class PaymentService implements PaymentServiceInterface {
             response.setSwishDeepLink(swishDeepLink);
             response.setQrCodeData(swishDeepLink);
 
-            // Swish betalningar går ut efter 3 minuter
-            response.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+            // Använd expiresAt från payment entity (konverterat från LocalDateTime till
+            // Instant)
+            response.setExpiresAt(payment.getExpiresAt()
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant());
 
             return response;
         } catch (Exception e) {

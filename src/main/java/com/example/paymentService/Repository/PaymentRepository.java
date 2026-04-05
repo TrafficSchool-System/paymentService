@@ -1,5 +1,6 @@
 package com.example.paymentService.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,4 +56,14 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
      * @return List of payments matching the criteria
      */
     List<Payment> findByUserIdAndStatus(Long userId, PaymentStatus status);
+
+    /**
+     * Finds payments that have expired (expiresAt is before the given time).
+     * Used by scheduled task to automatically mark expired payments.
+     * 
+     * @param status    The payment status to check
+     * @param expiresAt The expiry time to compare against
+     * @return List of payments that have expired
+     */
+    List<Payment> findByStatusAndExpiresAtBefore(PaymentStatus status, LocalDateTime expiresAt);
 }

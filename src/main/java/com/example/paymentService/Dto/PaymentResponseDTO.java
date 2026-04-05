@@ -1,6 +1,6 @@
 package com.example.paymentService.Dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Data Transfer Object (DTO) för respons efter skapad betalning.
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * - paymentId: Unikt ID för betalningen (instructionUUID)
  * - swishDeepLink: Deep link som öppnar Swish-appen
  * - qrCodeData: Data för QR-kod som användaren kan scanna
- * - expiresAt: När betalningen går ut
+ * - expiresAt: När betalningen går ut (UTC timestamp)
  *
  * Detta objekt innehåller ingen affärslogik och används enbart för
  * dataöverföring.
@@ -23,7 +23,7 @@ public class PaymentResponseDTO {
     private String paymentId; // instructionUUID
     private String swishDeepLink; // URL som öppnar Swish-appen
     private String qrCodeData; // Data för QR-kod
-    private LocalDateTime expiresAt; // När betalningen går ut
+    private Instant expiresAt; // När betalningen går ut (UTC timestamp)
 
     // Getters & Setters
     public String getPaymentId() {
@@ -50,11 +50,11 @@ public class PaymentResponseDTO {
         this.qrCodeData = qrCodeData;
     }
 
-    public LocalDateTime getExpiresAt() {
+    public Instant getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(LocalDateTime expiresAt) {
+    public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
     }
 
