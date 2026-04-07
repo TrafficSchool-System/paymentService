@@ -37,20 +37,14 @@ public class WebClientConfig {
     private String userServiceUrl;
 
     /**
-     * WebClient.Builder med load balancing
-     * 
-     * @LoadBalanced aktiverar service discovery via Eureka
-     */
-    @Bean
-    @LoadBalanced
-    public WebClient.Builder loadBalancedWebClientBuilder() {
-        return WebClient.builder()
-                .defaultHeader("Content-Type", "application/json");
-    }
-
-    /**
      * WebClient för UserService
-     * Base URL: Railway DNS (userservice:8081) eller Eureka fallback
+     * 
+     * Skapar WebClient UTAN @LoadBalanced för att fungera i Railway.
+     * Railway blockerar IP-till-IP kommunikation, så vi måste använda direkt URL.
+     * 
+     * Base URL från miljövariabel:
+     * - Railway: USER_SERVICE_URL=http://userservice:8081 (Railway DNS)
+     * - Lokal: USER_SERVICE_URL=http://localhost:8081 (eller Eureka)
      * 
      * Endpoints som anropas:
      * - POST /api/subscriptions → Skapa subscription efter lyckad betalning
@@ -60,9 +54,10 @@ public class WebClientConfig {
      * - X-Internal-Source: Identifierar payment-service som källa
      */
     @Bean
-    public WebClient userServiceWebClient(WebClient.Builder builder) {
-        return builder
+    public WebClient userServiceWebClient() {
+        return WebClient.builder()
                 .baseUrl(userServiceUrl)
+                .defaultHeader("Content-Type", "application/json")
                 .defaultHeader("X-Internal-API-Key", serviceApiKey)
                 .defaultHeader("X-Internal-Source", "payment-service")
                 .build();

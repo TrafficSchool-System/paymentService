@@ -216,16 +216,32 @@ public class PaymentService implements PaymentServiceInterface {
         switch (swishStatus) {
             case "PAID":
                 log.info("Payment completed!");
-                payment.setStatus(PaymentStatus.PAID);
-                payment.setPaidAt(LocalDateTime.now());
-                payment.setPaymentReference(swishCallback.getPaymentReference());
 
-                activateSubscriptionForUser(payment);
+                // KRITISKT: Aktivera subscription INNAN vi markerar som PAID
+                // Om subscription-aktivering failar, får kunden inte åtkomst
+                // men pengarna är dragna = betalningsbedrägelsei/förlust
+                try {
+                    activateSubscriptionForUser(payment);
 
-                // TODO: Framtida funktionalitet
-                // - Anropa userService för att aktivera paket - KLART
-                // - Skicka kvitto via email
-                // - Logga för bokföring
+                    // Subscription aktiverad - NU kan vi markera som PAID
+                    payment.setStatus(PaymentStatus.PAID);
+                    payment.setPaidAt(LocalDateTime.now());
+                    payment.setPaymentReference(swishCallback.getPaymentReference());
+
+                    // TODO: Framtida funktionalitet
+                    // - Skicka kvitto via email
+                    // - Logga för bokföring
+
+                } catch (Exception e) {
+                    // Subscription-aktivering misslyckades - markera som ERROR
+                    // så att manuell hantering eller retry kan göras
+                    log.error("CRITICAL: Payment received but subscription activation failed for payment {}",
+                            payment.getId(), e);
+                    payment.setStatus(PaymentStatus.ERROR);
+                    payment.setErrorCode("SUBSCRIPTION_FAILED");
+                    payment.setErrorMessage("Subscription activation failed: " + e.getMessage());
+                    payment.setPaymentReference(swishCallback.getPaymentReference());
+                }
                 break;
 
             case "DECLINED":
@@ -281,42 +297,38 @@ public class PaymentService implements PaymentServiceInterface {
     /**
      * Aktiverar subscription i userService när betalning är PAID.
      * Anropar userService via WebClient.
+     * 
+     * KASTAR exception om aktivering failar - detta används för att förhindra
+     * att payment markeras som PAID när subscription inte skapades.
      */
     private void activateSubscriptionForUser(Payment payment) {
-        try {
-            log.info("🔄 Activating subscription in userService for payment: {}", payment.getId());
+        log.info("🔄 Activating subscription in userService for payment: {}", payment.getId());
 
-            // Hämta package-info
-            Package pkg = packageRepository.findById(payment.getPackageId())
-                    .orElseThrow(() -> new PackageNotFoundException("Package not found: " + payment.getPackageId()));
+        // Hämta package-info
+        Package pkg = packageRepository.findById(payment.getPackageId())
+                .orElseThrow(() -> new PackageNotFoundException("Package not found: " + payment.getPackageId()));
 
-            // Bygg request
-            CreateSubscriptionRequestDTO subscriptionRequest = new CreateSubscriptionRequestDTO();
-            subscriptionRequest.setUserId(payment.getUserId());
-            subscriptionRequest.setPackageId(pkg.getId());
-            subscriptionRequest.setPackageName(pkg.getName());
-            subscriptionRequest.setPackagePrice(pkg.getPrice());
-            subscriptionRequest.setValidityDays(pkg.getValidityDays());
-            subscriptionRequest.setValidityHours(pkg.getValidityHours());
-            subscriptionRequest.setPaymentId(payment.getId());
+        // Bygg request
+        CreateSubscriptionRequestDTO subscriptionRequest = new CreateSubscriptionRequestDTO();
+        subscriptionRequest.setUserId(payment.getUserId());
+        subscriptionRequest.setPackageId(pkg.getId());
+        subscriptionRequest.setPackageName(pkg.getName());
+        subscriptionRequest.setPackagePrice(pkg.getPrice());
+        subscriptionRequest.setValidityDays(pkg.getValidityDays());
+        subscriptionRequest.setValidityHours(pkg.getValidityHours());
+        subscriptionRequest.setPaymentId(payment.getId());
 
-            // Anropa userService
-            String response = userServiceWebClient.post()
-                    .uri("/api/subscriptions")
-                    .header("X-Internal-API-Key", serviceApiKey)
-                    .bodyValue(subscriptionRequest)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-            log.info("Subscription activated in userService for userId= {}, response: {}",
-                    payment.getUserId(), response);
+        // Anropa userService - KASTAR exception om det failar
+        String response = userServiceWebClient.post()
+                .uri("/api/subscriptions")
+                .header("X-Internal-API-Key", serviceApiKey)
+                .bodyValue(subscriptionRequest)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        } catch (Exception e) {
-            // Logga fel men kasta INTE exception
-            // Betalningen är fortfarande giltig även om subscription-skapandet misslyckas
-            log.error("Error activating subscription for payment {}: {}",
-                    payment.getId(), e.getMessage(), e);
-        }
+        log.info("✅ Subscription activated in userService for userId={}, response: {}",
+                payment.getUserId(), response);
     }
 
     /**
