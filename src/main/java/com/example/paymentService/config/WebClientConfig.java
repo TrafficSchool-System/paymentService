@@ -33,6 +33,9 @@ public class WebClientConfig {
     @Value("${service.api.key}")
     private String serviceApiKey;
 
+    @Value("${USER_SERVICE_URL:http://user-service}")
+    private String userServiceUrl;
+
     /**
      * WebClient.Builder med load balancing
      * 
@@ -47,7 +50,7 @@ public class WebClientConfig {
 
     /**
      * WebClient för UserService
-     * Base URL: http://user-service (resolveras via Eureka)
+     * Base URL: Railway DNS (userservice:8081) eller Eureka fallback
      * 
      * Endpoints som anropas:
      * - POST /api/subscriptions → Skapa subscription efter lyckad betalning
@@ -59,7 +62,7 @@ public class WebClientConfig {
     @Bean
     public WebClient userServiceWebClient(WebClient.Builder builder) {
         return builder
-                .baseUrl("http://user-service")
+                .baseUrl(userServiceUrl)
                 .defaultHeader("X-Internal-API-Key", serviceApiKey)
                 .defaultHeader("X-Internal-Source", "payment-service")
                 .build();
