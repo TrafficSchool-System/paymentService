@@ -36,7 +36,7 @@ public class Package {
     @Builder.Default
     private PackageType packageType = PackageType.DAY;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column(nullable = false, precision = 15, scale = 2)

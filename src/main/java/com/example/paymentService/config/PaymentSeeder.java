@@ -35,9 +35,9 @@ public class PaymentSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Hämta 1 Month package
-        Package monthPackage = packageRepository.findByPackageType(PackageType.MONTH)
-                .orElseThrow(() -> new RuntimeException("MONTH package not found - run PackageSeeder first!"));
+        // Hämta 1 Month package by name instead of type
+        Package monthPackage = packageRepository.findByName("1 Month Access")
+                .orElseThrow(() -> new RuntimeException("1 Month Access package not found - run PackageSeeder first!"));
 
         // Skapa PAID payments för test-användare (ID 1, 2 från UserSeeder)
         createPaymentIfNotExists(1L, monthPackage, "0701234567"); // Robert@transportteori.se

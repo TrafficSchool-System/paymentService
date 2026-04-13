@@ -23,53 +23,64 @@ import java.math.BigDecimal;
 @Slf4j
 public class PackageSeeder implements CommandLineRunner {
 
-    private final PackageRepository packageRepository;
+        private final PackageRepository packageRepository;
 
-    @Override
-    public void run(String... args) {
-        createPackageIfNotExists(
-                PackageType.DAY,
-                "1 Day Access",
-                new BigDecimal("99.00"),
-                "24 hours full access to all quizzes and exams",
-                1,
-                24);
+        @Override
+        public void run(String... args) {
+                createPackageIfNotExists(
+                                PackageType.DAY,
+                                "1 Day Access",
+                                new BigDecimal("99.00"),
+                                "24 hours full access to all quizzes and exams",
+                                1,
+                                24);
 
-        createPackageIfNotExists(
-                PackageType.WEEK,
-                "1 Week Access",
-                new BigDecimal("349.00"),
-                "7 days full access to all quizzes and exams",
-                7,
-                168);
+                createPackageIfNotExists(
+                                PackageType.WEEK,
+                                "1 Week Access",
+                                new BigDecimal("349.00"),
+                                "7 days full access to all quizzes and exams",
+                                7,
+                                168);
 
-        createPackageIfNotExists(
-                PackageType.MONTH,
-                "1 Month Access",
-                new BigDecimal("899.00"),
-                "30 days full access to all quizzes and exams",
-                30,
-                720);
+                createPackageIfNotExists(
+                                PackageType.MONTH,
+                                "1 Month Access",
+                                new BigDecimal("899.00"),
+                                "30 days full access to all quizzes and exams",
+                                30,
+                                720);
 
-        log.info("✅ Package seeding completed - {} packages in database",
-                packageRepository.count());
-    }
+                createPackageIfNotExists(
+                                PackageType.MONTH,
+                                "3 Months Access",
+                                new BigDecimal("2499.00"),
+                                "90 days full access to all quizzes and exams",
+                                90,
+                                2160);
 
-    private void createPackageIfNotExists(PackageType type, String name, BigDecimal price,
-            String description, Integer days, Integer hours) {
-        if (packageRepository.findByPackageType(type).isEmpty()) {
-            Package pkg = Package.builder()
-                    .packageType(type)
-                    .name(name)
-                    .price(price)
-                    .description(description)
-                    .validityDays(days)
-                    .validityHours(hours)
-                    .active(true)
-                    .build();
-
-            packageRepository.save(pkg);
-            log.info("📦 Created package: {} ({}kr, {} days)", name, price, days);
+                log.info("✅ Package seeding completed - {} packages in database",
+                                packageRepository.count());
         }
-    }
+
+        private void createPackageIfNotExists(PackageType type, String name, BigDecimal price,
+                        String description, Integer days, Integer hours) {
+                // Check by name instead of packageType to allow multiple packages per type
+                if (!packageRepository.existsByName(name)) {
+                        Package pkg = Package.builder()
+                                        .packageType(type)
+                                        .name(name)
+                                        .price(price)
+                                        .description(description)
+                                        .validityDays(days)
+                                        .validityHours(hours)
+                                        .active(true)
+                                        .build();
+
+                        packageRepository.save(pkg);
+                        log.info("📦 Created package: {} ({}kr, {} days)", name, price, days);
+                } else {
+                        log.info("✓ Package already exists: {}", name);
+                }
+        }
 }

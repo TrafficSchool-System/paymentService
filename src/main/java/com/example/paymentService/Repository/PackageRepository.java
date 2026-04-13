@@ -32,12 +32,31 @@ public interface PackageRepository extends JpaRepository<Package, Long> {
     boolean existsByName(String name);
 
     /**
+     * Finds a package by its exact name.
+     * 
+     * @param name The exact package name to search for
+     * @return Optional containing the package if found
+     */
+    Optional<Package> findByName(String name);
+
+    /**
      * Finds a package by its type.
      * 
+     * @deprecated Use findByName instead to support multiple packages per type
      * @param packageType The package type to search for
      * @return Optional containing the package if found
      */
+    @Deprecated
     Optional<Package> findByPackageType(PackageType packageType);
+
+    /**
+     * Finds all packages by their type.
+     * Allows multiple packages of the same type (e.g., 1 month and 3 months).
+     * 
+     * @param packageType The package type to search for
+     * @return List of packages matching the type
+     */
+    java.util.List<Package> findAllByPackageType(PackageType packageType);
 
     /**
      * Finds all packages by active status.
