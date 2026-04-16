@@ -4,16 +4,23 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.paymentService.Dto.CreateManualPaymentDTO;
+import com.example.paymentService.Dto.ManualPaymentResponseDTO;
 import com.example.paymentService.Entity.Payment;
 import com.example.paymentService.swish.Service.PaymentService;
+
+import jakarta.validation.Valid;
 
 /**
  * ADMIN PAYMENT CONTROLLER
@@ -89,6 +96,29 @@ public class AdminPaymentController {
     }
 
     /**
+     * CREATE MANUAL PAYMENT
+     * POST /api/admin/payments/manual
+     * 
+     * Creates a manual payment (no Swish integration).
+     * Used when admin creates user + subscription manually (e.g., sold in person).
+     * Payment is immediately marked as PAID with MANUAL method.
+     * 
+     * @param request Manual payment details (userId, packageId)
+     * @return Created payment with package details
+     */
+    @PostMapping("/manual")
+    public ResponseEntity<ManualPaymentResponseDTO> createManualPayment(
+            @Valid @RequestBody CreateManualPaymentDTO request) {
+        log.info("🎫 POST /api/admin/payments/manual - Creating manual payment for user {}, package {}",
+                request.getUserId(), request.getPackageId());
+
+        ManualPaymentResponseDTO payment = paymentService.createManualPaymentWithResponse(request);
+        log.info("✅ Manual payment created: {}", payment.getId());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(payment);
+    }
+
+    /**
      * DELETE USER PAYMENTS (CASCADE DELETE)
      * DELETE /api/admin/payments/users/{userId}
      * 
@@ -103,19 +133,19 @@ public class AdminPaymentController {
      * @return ResponseEntity med antal raderade betalningar
      */
     @DeleteMapping("/users/{userId}")
-    public ResponseEntity<String> deleteUserPayments(@PathVariable Long userId){
+    public ResponseEntity<String> deleteUserPayments(@PathVariable Long userId) {
         log.info("🗑️ DELETE /api/admin/payments/users/{} - Cascade delete payments", userId);
 
         List<Payment> payments = paymentService.getPaymentsByUserId(userId);
-        int count = payments.size(); 
+        int count = payments.size();
 
         if (count > 0) {
-            paymentService.deletePaymentsByUserId(userId); 
+            paymentService.deletePaymentsByUserId(userId);
             log.info("✅ Deleted {} payments for user {}", count, userId);
-            return ResponseEntity.ok("Deleted " + count + " payments for user " + userId); 
+            return ResponseEntity.ok("Deleted " + count + " payments for user " + userId);
         } else {
             log.info("ℹ️ No payments found for user {}", userId);
-            return ResponseEntity.ok("No payments found for user " + userId); 
+            return ResponseEntity.ok("No payments found for user " + userId);
         }
     }
 }

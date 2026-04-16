@@ -2,7 +2,9 @@ package com.example.paymentService.swish.Service;
 
 import java.util.List;
 
+import com.example.paymentService.Dto.CreateManualPaymentDTO;
 import com.example.paymentService.Dto.CreatePaymentRequestDTO;
+import com.example.paymentService.Dto.ManualPaymentResponseDTO;
 import com.example.paymentService.Dto.PaymentResponseDTO;
 import com.example.paymentService.Entity.Payment;
 import com.example.paymentService.Exception.PaymentNotFoundException;
@@ -109,5 +111,31 @@ public interface PaymentServiceInterface {
      * @param userId Användarens ID
      */
     void deletePaymentsByUserId(Long userId);
+
+    /**
+     * Skapar en manuell betalning (utan Swish integration)
+     * Används när admin skapar användare + prenumeration manuellt.
+     * 
+     * Flow:
+     * 1. Validera att user och package finns
+     * 2. Hämta package pris
+     * 3. Skapa Payment med status PAID och paymentMethod MANUAL
+     * 4. Spara och returnera Payment
+     * 
+     * @param request DTO med userId och packageId
+     * @return Skapad betalning med status PAID
+     * @throws PackageNotFoundException om package inte finns
+     */
+    Payment createManualPayment(CreateManualPaymentDTO request);
+
+    /**
+     * Skapar en manuell betalning OCH returnerar DTO med package info
+     * Samma som createManualPayment men returnerar ManualPaymentResponseDTO
+     * 
+     * @param request DTO med userId och packageId
+     * @return DTO med payment + package details
+     * @throws PackageNotFoundException om package inte finns
+     */
+    ManualPaymentResponseDTO createManualPaymentWithResponse(CreateManualPaymentDTO request);
 
 }

@@ -45,9 +45,14 @@ public class Payment {
     @Column(nullable = false)
     private Long packageId;
 
-    @Column(nullable = false, length = 15)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private PaymentMethod paymentMethod = PaymentMethod.SWISH;
+    // SWISH (standard flow) or MANUAL (admin-created)
+
+    @Column(length = 15)
     private String payerAlias;
-    // Format: 46712345678
+    // Format: 46712345678 (only required for SWISH)
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;

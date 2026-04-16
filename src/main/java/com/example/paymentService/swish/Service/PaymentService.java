@@ -12,11 +12,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.example.paymentService.Dto.CreateManualPaymentDTO;
 import com.example.paymentService.Dto.CreatePaymentRequestDTO;
+import com.example.paymentService.Dto.ManualPaymentResponseDTO;
 import com.example.paymentService.Dto.PaymentResponseDTO;
 import com.example.paymentService.Dto.CreateSubscriptionRequestDTO;
 import com.example.paymentService.Entity.Package;
 import com.example.paymentService.Entity.Payment;
+import com.example.paymentService.Entity.PaymentMethod;
 import com.example.paymentService.Entity.PaymentStatus;
 import com.example.paymentService.Exception.ForbiddenException;
 import com.example.paymentService.Exception.PackageNotFoundException;
@@ -407,5 +410,106 @@ public class PaymentService implements PaymentServiceInterface {
         } else {
             log.info("No payments to delete for user {}", userId);
         }
+    }
+
+    /**
+     * ==========================================
+     * MANUELL BETALNING (ADMIN-SKAPAD)
+     * ==========================================
+     */
+
+    /**
+     * SKAPA MANUELL BETALNING
+     * 
+     * Används när admin skapar användare + prenumeration manuellt
+     * (t.ex. sålt i person på trafikskolan).
+     * 
+     * Betalningen skapas direkt som PAID med PaymentMethod.MANUAL.
+     * Ingen Swish integration - prenumeration aktiveras omedelbart.
+     * 
+     * @param request DTO med userId och packageId
+     * @return Skapad payment med status PAID
+     */
+    @Override
+    @Transactional
+    public Payment createManualPayment(CreateManualPaymentDTO request) {
+        log.info("Creating manual payment for userId: {}, packageId: {}",
+                request.getUserId(), request.getPackageId());
+
+        // 1. Hämta package för att få pris och validera att det finns
+        Package pkg = packageRepository.findById(request.getPackageId())
+                .orElseThrow(() -> new PackageNotFoundException(
+                        "Package with ID " + request.getPackageId() + " not found"));
+
+        log.info("Package found: {} - Price: {} SEK", pkg.getName(), pkg.getPrice());
+
+        // 2. Generera unikt payment ID
+        String paymentId = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .toUpperCase();
+
+        // 3. Skapa Payment entity med status PAID och method MANUAL
+        Payment payment = Payment.builder()
+                .id(paymentId)
+                .userId(request.getUserId())
+                .packageId(pkg.getId())
+                .amount(pkg.getPrice())
+                .status(PaymentStatus.PAID)
+                .paymentMethod(PaymentMethod.MANUAL)
+                .payerAlias("ADMIN") // Manuell betalning skapad av admin
+                .paymentReference("MANUAL-" + System.currentTimeMillis())
+                .callbackIdentifier("MANUAL")
+                .paidAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // 4. Spara betalning
+        Payment savedPayment = paymentRepository.save(payment);
+        log.info("✅ Manual payment created: {}", paymentId);
+
+        // 5. Aktivera prenumeration i UserService
+        try {
+            activateSubscriptionForUser(savedPayment);
+        } catch (Exception e) {
+            log.error("❌ Failed to activate subscription in UserService: {}", e.getMessage());
+            // Payment är redan PAID, men prenumeration misslyckades
+            // Detta bör hanteras manuellt eller via retry-mekanism
+            throw new RuntimeException("Payment created but subscription activation failed", e);
+        }
+
+        return savedPayment;
+    }
+
+    /**
+     * SKAPA MANUELL BETALNING MED RESPONSE DTO
+     * 
+     * Samma som createManualPayment men returnerar DTO med package info.
+     * Används av AdminService för att få komplett information.
+     * 
+     * @param request DTO med userId och packageId
+     * @return DTO med payment + package details
+     */
+    @Override
+    @Transactional
+    public ManualPaymentResponseDTO createManualPaymentWithResponse(CreateManualPaymentDTO request) {
+        // Skapa payment (returnerar Payment entity med savedpkg)
+        Payment payment = createManualPayment(request);
+
+        // Hämta package för att få namn
+        Package pkg = packageRepository.findById(payment.getPackageId())
+                .orElseThrow(() -> new PackageNotFoundException(
+                        "Package with ID " + payment.getPackageId() + " not found"));
+
+        // Bygg response DTO med package info
+        return ManualPaymentResponseDTO.builder()
+                .id(payment.getId())
+                .userId(payment.getUserId())
+                .packageId(payment.getPackageId())
+                .amount(payment.getAmount())
+                .status(payment.getStatus().toString())
+                .paymentMethod(payment.getPaymentMethod().toString())
+                .packageName(pkg.getName())
+                .build();
     }
 }

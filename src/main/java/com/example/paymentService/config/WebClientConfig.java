@@ -33,7 +33,7 @@ public class WebClientConfig {
     @Value("${service.api.key}")
     private String serviceApiKey;
 
-    @Value("${USER_SERVICE_URL:http://user-service}")
+    @Value("${USER_SERVICE_URL:http://user-service:8081}")
     private String userServiceUrl;
 
     /**
