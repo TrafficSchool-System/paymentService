@@ -17,12 +17,12 @@ jobs:
       - name: Checkout kod
         uses: actions/checkout@v4
 
-      - name: Logga in på Azure
+      - name: Logga in pÃ¥ Azure
         uses: azure/login@v3
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
-      - name: Logga in på ACR
+      - name: Logga in pÃ¥ ACR
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
@@ -48,19 +48,4 @@ jobs:
             --registry-password ${{ secrets.ACR_PASSWORD }} \
             --target-port 8083 \
             --ingress internal \
-            --min-replicas 1 \
-            --max-replicas 2 \
-            --env-vars \
-              SPRING_PROFILES_ACTIVE=prod \
-              MYSQLHOST=${{ secrets.MYSQL_HOST }} \
-              MYSQLPORT=3306 \
-              MYSQLDATABASE=paymentServiceDb \
-              MYSQLUSER=${{ secrets.MYSQL_USER }} \
-              MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }} \
-              SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }} \
-              SWISH_CALLBACK_URL=${{ secrets.SWISH_CALLBACK_URL }} \
-              SWISH_MERCHANT_NUMBER=${{ secrets.SWISH_MERCHANT_NUMBER }} \
-              SWISH_KEYSTORE_PATH=${{ secrets.SWISH_KEYSTORE_PATH }} \
-              SWISH_KEYSTORE_PASSWORD=${{ secrets.SWISH_KEYSTORE_PASSWORD }} \
-              SWISH_CA_CERT_PATH=${{ secrets.SWISH_CA_CERT_PATH }} \
-              EUREKA_URL=http://eureka-server/eureka/
+            --env-vars "SPRING_PROFILES_ACTIVE=prod" "MYSQLHOST=${{ secrets.MYSQL_HOST }}" "MYSQLPORT=3306" "MYSQLDATABASE=paymentServiceDb" "MYSQLUSER=${{ secrets.MYSQL_USER }}" "MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }}" "SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }}" "EUREKA_URL=http://eureka-server/eureka/"
