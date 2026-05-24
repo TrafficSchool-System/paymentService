@@ -49,3 +49,10 @@ jobs:
             --target-port 8083 \
             --ingress internal \
             --env-vars "SPRING_PROFILES_ACTIVE=prod" "MYSQLHOST=${{ secrets.MYSQL_HOST }}" "MYSQLPORT=3306" "MYSQLDATABASE=paymentServiceDb" "MYSQLUSER=${{ secrets.MYSQL_USER }}" "MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }}" "SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }}" "EUREKA_URL=http://eureka-server/eureka/"
+
+      - name: Sätt minimum 1 replik (förhindra scale-to-zero)
+        run: |
+          az containerapp update \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --min-replicas 1
