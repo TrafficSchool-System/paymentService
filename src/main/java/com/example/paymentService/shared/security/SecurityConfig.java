@@ -44,6 +44,9 @@ public class SecurityConfig {
                         // Swish webhook (external callback from Swish payment provider)
                         .requestMatchers("/api/webhooks/swish").permitAll()
 
+                        // Health probe (Azure Container Apps)
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+
                         // ==============================================
                         // ADMIN ENDPOINTS - Require ADMIN or INTERNAL_SERVICE role
                         // ==============================================
