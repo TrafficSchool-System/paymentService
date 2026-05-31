@@ -36,6 +36,11 @@ public class SwishClient {
     }
 
     private RestTemplate createRestTemplate() throws Exception {
+        // If Swish is not configured (no keystore path), return a basic client
+        if (properties.getKeyStorePath() == null || properties.getKeyStorePath().isEmpty()) {
+            return new RestTemplate();
+        }
+
         // Ladda keystore (certifikat) från classpath
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         String keyStoreResourcePath = properties.getKeyStorePath().replace("classpath:", "");
