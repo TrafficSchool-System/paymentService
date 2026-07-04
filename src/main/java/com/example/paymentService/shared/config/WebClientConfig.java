@@ -26,7 +26,7 @@ public class WebClientConfig {
     @Value("${service.api.key}")
     private String serviceApiKey;
 
-    @Value("${user-service.base-url:http://user-service}")
+    @Value("${user-service.base-url}")
     private String userServiceUrl;
 
     @Bean
